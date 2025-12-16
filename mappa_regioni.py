@@ -103,22 +103,22 @@ except Exception as e:
 st.sidebar.markdown("---")
 st.sidebar.subheader("Filtri")
 
-# Potenza
-potenza_options = sorted(df["potenza_imp"].unique())
-potenza_imp_filter = st.sidebar.selectbox("Potenza Imp.", potenza_options)
+# Tariffa
+tariffa_options = sorted(df["tariffa"].unique())
+tariffa_filter = st.sidebar.selectbox("Tariffa", tariffa_options)
 
 # Tariffa
-tariffa_options = sorted(df[df["potenza_imp"] == potenza_imp_filter]["tariffa"].unique())
-if not tariffa_options:
+potenza_options = sorted(df[df["tariffa"] == tariffa_filter]["potenza_imp"].unique())
+if not potenza_options:
     st.warning("Nessuna tariffa trovata per la potenza selezionata.")
     st.stop()
 
-tariffa_filter = st.sidebar.selectbox("Tariffa", tariffa_options)
+potenza_imp_filter = st.sidebar.selectbox("Potenza Imp.", potenza_options)
 
 # Residenza
-residenza_options = sorted(
-    df[(df["potenza_imp"] == potenza_imp_filter) &
-       (df["tariffa"] == tariffa_filter)]["residenza"].unique()
+residenza_options=sorted(
+    df[(df["tariffa"] == tariffa_filter) &
+       (df["potenza_imp"] == potenza_imp_filter)]["residenza"].unique()
 )
 
 if not residenza_options:
@@ -139,9 +139,10 @@ def filtra_dati(df, potenza, tariffa, residenza):
     ]
 
     df_region = (
-        df_filtered.groupby("regione")["energia_tot"]
-        .sum()
-        .reset_index()
+    df_filtered.groupby("regione").agg(
+        energia_tot=("energia_tot", "sum"),
+        somma_pod=("somma_pod", "sum")  # somma dei POD per regione
+        ).reset_index()
     )
 
     totale = df_filtered["energia_tot"].sum()
@@ -175,7 +176,7 @@ fig = px.choropleth_mapbox(
     mapbox_style="carto-positron",
     center={"lat": 42.5, "lon": 12.5},
     zoom=4.5,
-    hover_data={"regione": True, "energia_tot": ":,.2f"},
+    hover_data={"regione": True, "energia_tot": ":,.2f", "somma_pod": ":,d"},
 )
 
 fig.update_layout(
